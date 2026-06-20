@@ -1,0 +1,1 @@
+intialised the setup for mad2 project
