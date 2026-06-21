@@ -1,4 +1,4 @@
 class Config:
-    SQL_URI="sqlite:///app.db"
-    SECRET="syrup"
+    SQLALCHEMY_DATABASE_URI="sqlite:///app.db"
+    SECRET_KEY="syrup"
     SECURITY_PASSWORD_SALT="mysalt"
