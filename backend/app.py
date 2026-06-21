@@ -22,11 +22,20 @@ def create_app():
 
     with app.app_context():
         db.create_all()
+        admin = User.query.filter_by(username="admin").first()
 
-        if not (User.query.filter_by(username="admin")):
-            user = User(
-                
-            )
+        if admin is None:
+            admin = User(
+                username="admin",
+                email="admin@gmail.com",
+                password=generate_password_hash("admin123"),
+                role="admin",
+                active=True
+        )
+            
+            db.session.add(admin)
+            db.session.commit()
+
     return app,api
 
 app, api = create_app()
@@ -41,6 +50,9 @@ class Hello(Resource):
 
 api.add_resource(Hello,"/")
 
+from controllers.auth import Login
+
+api.add_resource(Login,"/login")
 
 if __name__=="__main__":
     app.run(port=3000,debug=True)
