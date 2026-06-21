@@ -19,7 +19,7 @@ class User(db.Model,UserMixin):
     company = db.relationship("Company",backref="user",uselist=False, cascade="all, delete-orphan")
 
     def set_password(self,password):
-        self.password = generate_password_hash(password).decode("utf-8")
+        self.password = generate_password_hash(password)
     
     def check_password(self,password):
         return check_password_hash(self.password,password)
@@ -70,7 +70,7 @@ class Application(db.Model):
     status = db.Column(Enum("applied","shortlisted","selected","rejected",name="application_status"), default = "applied", nullable=False)
     interview_date = db.Column(db.DateTime)
     remarks = db.Column(db.Text)
-    __table_args__ = (db.UniqueConstraint("student_id","drive_id",name="unique_application"))
+    __table_args__ = (db.UniqueConstraint("student_id","drive_id",name="unique_application"),)
     
 class Drive(db.Model):
     
