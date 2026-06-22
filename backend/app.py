@@ -2,22 +2,17 @@ from flask import Flask
 from flask_restful import Api, Resource
 from controllers.config import Config
 from controllers.database import db
-from flask_login import LoginManager
 from controllers.models import *
+from flask_jwt_extended import JWTManager, jwt_required
 
-login_manager = LoginManager()
+jwt = JWTManager()
 
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
     db.init_app(app)
-
-    login_manager.init_app(app)
-    @login_manager.user_loader
-    def load_user(user_id):
-        return User.query.filter_by(id=int(user_id)).first()
-
+    jwt.init_app(app)
     api = Api(app)
 
     with app.app_context():
@@ -48,7 +43,14 @@ class Hello(Resource):
     def post(self):
         return "post also worked and created something", 201
 
+
+class Protected(Resource):
+    @jwt_required()
+    def get(self):
+        return "you are protected", 200
+
 api.add_resource(Hello,"/")
+api.add_resource(Protected,"/protected")
 
 from controllers.auth import Login
 
