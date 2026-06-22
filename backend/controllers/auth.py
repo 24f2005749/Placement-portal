@@ -1,7 +1,7 @@
 from flask_restful import Resource
 from flask import request, jsonify, make_response
 from controllers.models import *
-from flask_login import login_user
+from flask_jwt_extended import create_access_token
 
 class Login(Resource):
     def post(self):
@@ -39,10 +39,10 @@ class Login(Resource):
 
             return make_response(result,400)
         
-        login_user(user)
-
+        token = create_access_token(identity=str(user.id))
         result = {
             'message' : 'Logged in successfully',
+            'access_token': token,
             'user' : {
                 'id' : user.id,
                 'username' : user.username,
