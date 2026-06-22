@@ -1,10 +1,9 @@
 from controllers.database import db
-from flask_login import UserMixin
 from sqlalchemy import Enum
 from flask_bcrypt import generate_password_hash, check_password_hash
 from datetime import datetime, UTC
 
-class User(db.Model,UserMixin):
+class User(db.Model):
 
     __tablename__ = "users"
 
