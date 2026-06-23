@@ -4,6 +4,7 @@ from controllers.config import Config
 from controllers.database import db
 from controllers.models import *
 from flask_jwt_extended import JWTManager, jwt_required
+from controllers.auth import Login, Register
 
 jwt = JWTManager()
 
@@ -15,13 +16,18 @@ def create_app():
     jwt.init_app(app)
     api = Api(app)
 
+    @jwt.expired_token_loader
+    def token_expiration_message(jwt_header, jwt_payload):
+        return {
+            "message" : "Session expired. Please login again"
+        }, 401
+
     with app.app_context():
         db.create_all()
-        admin = User.query.filter_by(username="admin").first()
+        admin = User.query.filter_by(email="admin@gmail.com").first()
 
         if admin is None:
             admin = User(
-                username="admin",
                 email="admin@gmail.com",
                 password=generate_password_hash("admin123"),
                 role="admin",
@@ -52,9 +58,10 @@ class Protected(Resource):
 api.add_resource(Hello,"/")
 api.add_resource(Protected,"/protected")
 
-from controllers.auth import Login
+
 
 api.add_resource(Login,"/login")
+api.add_resource(Register, "/register")
 
 if __name__=="__main__":
     app.run(port=3000,debug=True)
