@@ -8,10 +8,9 @@ class User(db.Model):
     __tablename__ = "users"
 
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(30),unique=True, nullable = False)
-    email = db.Column(db.String(30),nullable=False, unique=True)
+    email = db.Column(db.String(120),nullable=False, unique=True)
     password = db.Column(db.String(255),nullable = False)
-    role = db.Column(Enum('student','company','admin'), nullable=False)
+    role = db.Column(Enum('student','company','admin', name="user_roles"), nullable=False)
     active = db.Column(db.Boolean, default=True)
 
     student = db.relationship("Student",backref="user",uselist=False, cascade="all, delete-orphan")
