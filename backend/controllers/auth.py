@@ -20,7 +20,7 @@ class Login(Resource):
         email = login_credentials.get('email',None)
         password = login_credentials.get('password',None)
 
-        if not email or not password:
+        if not (email and password):
             result = {
                 'message' : 'Email and Password are required'
             }
@@ -33,9 +33,12 @@ class Login(Resource):
                 'message' : 'Invalid credentials. Please try again'
             }
 
-            return make_response(result, 404)
+            return make_response(result, 401)
         
-        if not check_password_hash(user.password,password):
+        if not user.active:
+            return {'message' : 'Account is inactive'}, 203
+        
+        if not user.check_password(password):
             result = {
                 'message' : 'Invalid credentials. Please try again'
             }
@@ -46,6 +49,7 @@ class Login(Resource):
         result = {
             'message' : 'Logged in successfully',
             'access_token': token,
+            'profile_completed' : user.profile_completed,
             'user' : {
                 'id' : user.id,
                 'email' : user.email,
@@ -53,7 +57,7 @@ class Login(Resource):
             }
         }
 
-        return make_response(result,201)
+        return make_response(result,200)
 
 class Register(Resource):
     def post(self):
@@ -97,12 +101,25 @@ class Register(Resource):
 
         user = User(
             email = email,
-            password = generate_password_hash(password),
             role = role,
-            active = True
+            active = True,
         )
+
+        user.set_password(password)
         
         db.session.add(user)
         db.session.commit()
 
-        return {"message" : "User created successfully"}, 201
+        token = create_access_token(identity=str(user.id))
+        result = {
+            'message' : 'Registered successfully',
+            'access_token': token,
+            'profile_completed' : user.profile_completed,
+            'user' : {
+                'id' : user.id,
+                'email' : user.email,
+                'role' : user.role
+            }
+        }
+
+        return make_response(result, 201)
