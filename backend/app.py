@@ -5,12 +5,14 @@ from controllers.database import db
 from controllers.models import *
 from flask_jwt_extended import JWTManager, jwt_required
 from controllers.auth import Login, Register
+from controllers.routes.students import StudentProfile
 
 jwt = JWTManager()
 
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
+   
 
     db.init_app(app)
     jwt.init_app(app)
@@ -29,14 +31,32 @@ def create_app():
         if admin is None:
             admin = User(
                 email="admin@gmail.com",
-                password=generate_password_hash("admin123"),
                 role="admin",
                 active=True
         )
+            admin.set_password("admin123")
             
             db.session.add(admin)
             db.session.commit()
 
+        #! TEMPORARY ADDITION 
+        def seed_branches():
+            branches = [
+                "B.Tech CSE",
+                "B.Tech IT",
+                "B.Tech ECE",
+                "B.Tech ME",
+                "B.Tech CE"
+            ]
+
+            for branch_name in branches:
+                if not Branch.query.filter_by(name=branch_name).first():
+                    db.session.add(Branch(name=branch_name))
+
+            db.session.commit()
+
+        seed_branches()    
+        #! UPTO HERE
     return app,api
 
 app, api = create_app()
@@ -62,6 +82,8 @@ api.add_resource(Protected,"/protected")
 
 api.add_resource(Login,"/login")
 api.add_resource(Register, "/register")
+
+api.add_resource(StudentProfile,"/student/profile")
 
 if __name__=="__main__":
     app.run(port=3000,debug=True)
