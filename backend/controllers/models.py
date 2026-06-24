@@ -12,13 +12,13 @@ class User(db.Model):
     password = db.Column(db.String(255),nullable = False)
     role = db.Column(Enum('student','company','admin', name="user_roles"), nullable=False)
     active = db.Column(db.Boolean, default=True)
+    profile_completed = db.Column(db.Boolean, default=False)
 
     student = db.relationship("Student",backref="user",uselist=False, cascade="all, delete-orphan")
     company = db.relationship("Company",backref="user",uselist=False, cascade="all, delete-orphan")
 
     def set_password(self,password):
         self.password = generate_password_hash(password)
-    
     def check_password(self,password):
         return check_password_hash(self.password,password)
     
