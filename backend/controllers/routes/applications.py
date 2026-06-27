@@ -106,3 +106,70 @@ class StudentApplicationList(Resource):
             "message":"Application submitted successfully",
             "application_id":application.id
         },201
+    
+class StudentApplication(Resource):
+
+    @jwt_required()
+    def get(self, application_id):
+        user_id = get_jwt_identity()
+
+        user = User.query.get(user_id)
+
+        if user.role != "student":
+            return {"message":"Access denied"},403
+
+        student = Student.query.filter_by(user_id=user_id).first()
+
+        if not student:
+            return {"message":"Student profile not found"},404
+
+        application = Application.query.filter_by(
+            id=application_id,
+            student_id=student.id
+        ).first()
+
+        if not application:
+            return {"message":"Application not found"},404
+
+        return {
+            "application_id":application.id,
+            "company_name":application.drive.company.company_name,
+            "title":application.drive.title,
+            "job_description":application.drive.job_description,
+            "salary_package":application.drive.salary_package,
+            "location":application.drive.location,
+            "status":application.status,
+            "remarks":application.remarks,
+            "interview_date":application.interview_date,
+            "applied_at":application.applied_at
+        },200
+
+    @jwt_required()
+    def delete(self, application_id):
+        user_id = get_jwt_identity()
+
+        user = User.query.get(user_id)
+
+        if user.role != "student":
+            return {"message":"Access denied"},403
+
+        student = Student.query.filter_by(user_id=user_id).first()
+
+        if not student:
+            return {"message":"Student profile not found"},404
+
+        application = Application.query.filter_by(
+            id=application_id,
+            student_id=student.id
+        ).first()
+
+        if not application:
+            return {"message":"Application not found"},404
+
+        if application.status != "applied":
+            return {"message":"Application cannot be withdrawn"},400
+
+        db.session.delete(application)
+        db.session.commit()
+
+        return {"message":"Application withdrawn successfully"},200
