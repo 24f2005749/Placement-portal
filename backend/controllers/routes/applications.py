@@ -1,0 +1,108 @@
+from flask_restful import Resource
+from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask import request
+from datetime import date
+from controllers.database import db
+from controllers.models import *
+
+
+class StudentApplicationList(Resource):
+
+    @jwt_required()
+    def get(self):
+        user_id = get_jwt_identity()
+
+        user = User.query.get(user_id)
+
+        if user.role != "student":
+            return {"message":"Access denied"},403
+
+        student = Student.query.filter_by(user_id=user_id).first()
+
+        if not student:
+            return {"message":"Student profile not found"},404
+
+        applications = Application.query.filter_by(student_id=student.id).all()
+
+        result = []
+
+        for application in applications:
+            result.append({
+                "application_id": application.id,
+                "drive_id": application.drive.id,
+                "company_name": application.drive.company.company_name,
+                "title": application.drive.title,
+                "status": application.status,
+                "applied_at": application.applied_at
+            })
+
+        return result,200
+
+
+    @jwt_required()
+    def post(self):
+        user_id = get_jwt_identity()
+
+        user = User.query.get(user_id)
+
+        if user.role != "student":
+            return {"message":"Access denied"},403
+
+        student = Student.query.filter_by(user_id=user_id).first()
+
+        if not student:
+            return {"message":"Student profile not found"},404
+
+        application_credentials = request.get_json()
+
+        if not application_credentials:
+            return {"message":"Data are required"},400
+
+        drive_id = application_credentials.get("drive_id",None)
+
+        if not drive_id:
+            return {"message":"Drive id is required"},400
+
+        drive = Drive.query.get(drive_id)
+
+        if not drive:
+            return {"message":"Drive not found"},404
+
+        if drive.approval_status != "approved":
+            return {"message":"Drive not approved"},403
+
+        if drive.status != "open":
+            return {"message":"Drive is closed"},400
+
+        if drive.application_deadline < date.today():
+            return {"message":"Application deadline has passed"},400
+
+        if drive.eligibility_cgpa and student.cgpa < drive.eligibility_cgpa:
+            return {"message":"CGPA criteria not satisfied"},400
+
+        if drive.eligibility_year and student.graduation_year != drive.eligibility_year:
+            return {"message":"Graduation year not eligible"},400
+
+        if student.branch not in drive.branches:
+            return {"message":"Branch not eligible"},400
+
+        existing_application = Application.query.filter_by(
+            student_id=student.id,
+            drive_id=drive.id
+        ).first()
+
+        if existing_application:
+            return {"message":"Already applied"},409
+
+        application = Application(
+            student_id=student.id,
+            drive_id=drive.id
+        )
+
+        db.session.add(application)
+        db.session.commit()
+
+        return {
+            "message":"Application submitted successfully",
+            "application_id":application.id
+        },201
