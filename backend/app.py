@@ -7,6 +7,7 @@ from flask_jwt_extended import JWTManager, jwt_required
 from controllers.auth import Login, Register
 from controllers.routes.students import StudentProfile
 from controllers.routes.company import CompanyProfile
+from controllers.routes.drives import DrivesList, CompanyDrives
 
 jwt = JWTManager()
 
@@ -86,6 +87,9 @@ api.add_resource(Register, "/register")
 
 api.add_resource(StudentProfile,"/student/profile")
 api.add_resource(CompanyProfile,"/company/profile")
+
+api.add_resource(CompanyDrives)
+api.add_resource(DrivesList,"/company/driveslist")
 
 if __name__=="__main__":
     app.run(port=3000,debug=True)
