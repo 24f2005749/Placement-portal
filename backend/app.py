@@ -7,7 +7,7 @@ from flask_jwt_extended import JWTManager, jwt_required
 from controllers.auth import Login, Register
 from controllers.routes.students import StudentProfile
 from controllers.routes.company import CompanyProfile
-from controllers.routes.drives import DrivesList, CompanyDrives
+from controllers.routes.drives import DrivesList, CompanyDrive
 from controllers.routes.applications import CompanyApplication, CompanyApplicationList, StudentApplication, StudentApplicationList
 
 jwt = JWTManager()
@@ -66,30 +66,13 @@ app, api = create_app()
 
 #Routes
 
-class Hello(Resource):
-    def get(self):
-        return "its working", 200
-    def post(self):
-        return "post also worked and created something", 201
-
-
-class Protected(Resource):
-    @jwt_required()
-    def get(self):
-        return "you are protected", 200
-
-api.add_resource(Hello,"/")
-api.add_resource(Protected,"/protected")
-
-
-
 api.add_resource(Login,"/login")
 api.add_resource(Register, "/register")
 
 api.add_resource(StudentProfile,"/student/profile")
 api.add_resource(CompanyProfile,"/company/profile")
 
-api.add_resource(CompanyDrives)
+api.add_resource(CompanyDrive,"/company/drive/<int:drive_id>")
 api.add_resource(DrivesList,"/company/driveslist")
 
 api.add_resource(StudentApplicationList,"/student/applications")

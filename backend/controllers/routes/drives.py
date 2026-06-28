@@ -6,7 +6,7 @@ from controllers.models import *
 from datetime import datetime
 
 
-class CompanyDrives(Resource):
+class CompanyDrive(Resource):
     @jwt_required()
     def get(self, drive_id):
         user_id = get_jwt_identity()
