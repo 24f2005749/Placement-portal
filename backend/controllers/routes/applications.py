@@ -175,6 +175,44 @@ class StudentApplication(Resource):
 
         return {"message":"Application withdrawn successfully"},200
     
+class CompanyApplicationList(Resource):
+
+    @jwt_required()
+    def get(self, drive_id):
+        user_id = get_jwt_identity()
+
+        user = User.query.get(user_id)
+
+        if user.role != "company":
+            return {"message":"Access denied"},403
+
+        company = Company.query.filter_by(user_id=user_id).first()
+
+        if not company:
+            return {"message":"Company profile not found"},404
+
+        drive = Drive.query.filter_by(
+            id=drive_id,
+            company_id=company.id
+        ).first()
+
+        if not drive:
+            return {"message":"Drive not found"},404
+
+        result = []
+
+        for application in drive.applications:
+            result.append({
+                "application_id":application.id,
+                "student_name":application.student.full_name,
+                "roll_number":application.student.roll_number,
+                "branch":application.student.branch.name,
+                "cgpa":application.student.cgpa,
+                "graduation_year":application.student.graduation_year,
+                "status":application.status
+            })
+
+        return result,200
 
 class CompanyApplication(Resource):
 
