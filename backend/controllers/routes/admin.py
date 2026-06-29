@@ -27,3 +27,28 @@ class AdminDashboard(Resource):
             "rejected_drives":Drive.query.filter_by(approval_status="rejected").count()
         },200
     
+class AdminCompanies(Resource):
+    @jwt_required()
+    def get(self):
+        user_id = get_jwt_identity()
+
+        user = User.query.get(user_id)
+
+        if user.role != "admin":
+            return {"message":"Access denied"},403
+
+        companies = Company.query.all()
+
+        result = []
+
+        for company in companies:
+            result.append({
+                "id":company.id,
+                "company_name":company.company_name,
+                "website":company.website,
+                "hr_name":company.hr_name,
+                "hr_email":company.hr_email,
+                "approval_status":company.approval_status
+            })
+
+        return result,200
