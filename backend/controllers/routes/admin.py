@@ -85,3 +85,32 @@ class AdminCompany(Resource):
         return {
             "message":"Company updated successfully"
         },200
+    
+class AdminDrives(Resource):
+    @jwt_required()
+    def get(self):
+        user_id = get_jwt_identity()
+
+        user = User.query.get(user_id)
+
+        if user.role != "admin":
+            return {"message":"Access denied"},403
+
+        drives = Drive.query.all()
+
+        result = []
+
+        for drive in drives:
+            result.append({
+                "id":drive.id,
+                "company":drive.company.company_name,
+                "title":drive.title,
+                "salary_package":drive.salary_package,
+                "location":drive.location,
+                "application_deadline":drive.application_deadline,
+                "drive_date":drive.drive_date,
+                "approval_status":drive.approval_status,
+                "status":drive.status
+            })
+
+        return result,200
