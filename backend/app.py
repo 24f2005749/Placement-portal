@@ -9,6 +9,7 @@ from controllers.routes.students import StudentProfile
 from controllers.routes.company import CompanyProfile
 from controllers.routes.drives import DrivesList, CompanyDrive
 from controllers.routes.applications import CompanyApplication, CompanyApplicationList, StudentApplication, StudentApplicationList
+from controllers.routes.admin import AdminCompanies, AdminCompany, AdminDashboard, AdminDrive, AdminDrives
 
 jwt = JWTManager()
 
@@ -82,6 +83,14 @@ api.add_resource(StudentApplication,"/student/applications/<int:application_id>"
 api.add_resource(CompanyApplicationList,"/company/drives/<int:drive_id>/applications")
 
 api.add_resource(CompanyApplication,"/company/applications/<int:application_id>")
+
+api.add_resource(AdminDashboard,"/admin/dashboard")
+
+api.add_resource(AdminCompanies,"/admin/companies")
+api.add_resource(AdminCompany,"/admin/companies/<int:company_id>")
+
+api.add_resource(AdminDrives,"/admin/drives")
+api.add_resource(AdminDrive,"/admin/drives/<int:drive_id>")
 
 if __name__=="__main__":
     app.run(port=3000,debug=True)
