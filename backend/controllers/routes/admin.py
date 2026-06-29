@@ -1,0 +1,29 @@
+from flask_restful import Resource
+from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask import request
+from controllers.database import db
+from controllers.models import *
+
+class AdminDashboard(Resource):
+    @jwt_required()
+    def get(self):
+        user_id = get_jwt_identity()
+
+        user = User.query.get(user_id)
+
+        if user.role != "admin":
+            return {"message":"Access denied"},403
+
+        return {
+            "students":Student.query.count(),
+            "companies":Company.query.count(),
+            "drives":Drive.query.count(),
+            "applications":Application.query.count(),
+            "pending_companies":Company.query.filter_by(approval_status="pending").count(),
+            "approved_companies":Company.query.filter_by(approval_status="approved").count(),
+            "rejected_companies":Company.query.filter_by(approval_status="rejected").count(),
+            "pending_drives":Drive.query.filter_by(approval_status="pending").count(),
+            "approved_drives":Drive.query.filter_by(approval_status="approved").count(),
+            "rejected_drives":Drive.query.filter_by(approval_status="rejected").count()
+        },200
+    
