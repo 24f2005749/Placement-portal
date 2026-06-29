@@ -52,3 +52,36 @@ class AdminCompanies(Resource):
             })
 
         return result,200
+    
+class AdminCompany(Resource):
+    @jwt_required()
+    def put(self, company_id):
+        user_id = get_jwt_identity()
+
+        user = User.query.get(user_id)
+
+        if user.role != "admin":
+            return {"message":"Access denied"},403
+
+        company = Company.query.get(company_id)
+
+        if not company:
+            return {"message":"Company not found"},404
+
+        company_credentials = request.get_json()
+
+        if not company_credentials:
+            return {"message":"Data are required"},400
+
+        approval_status = company_credentials.get("approval_status",None)
+
+        if approval_status not in ["approved","rejected"]:
+            return {"message":"Invalid approval status"},400
+
+        company.approval_status = approval_status
+
+        db.session.commit()
+
+        return {
+            "message":"Company updated successfully"
+        },200
