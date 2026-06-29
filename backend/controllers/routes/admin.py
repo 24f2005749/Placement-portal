@@ -114,3 +114,66 @@ class AdminDrives(Resource):
             })
 
         return result,200
+
+class AdminDrive(Resource):
+    @jwt_required()
+    def get(self, drive_id):
+        user_id = get_jwt_identity()
+
+        user = User.query.get(user_id)
+
+        if user.role != "admin":
+            return {"message":"Access denied"},403
+
+        drive = Drive.query.get(drive_id)
+
+        if not drive:
+            return {"message":"Drive not found"},404
+
+        return {
+            "id":drive.id,
+            "company":drive.company.company_name,
+            "title":drive.title,
+            "job_description":drive.job_description,
+            "salary_package":drive.salary_package,
+            "location":drive.location,
+            "eligibility_year":drive.eligibility_year,
+            "eligibility_cgpa":drive.eligibility_cgpa,
+            "application_deadline":drive.application_deadline,
+            "drive_date":drive.drive_date,
+            "approval_status":drive.approval_status,
+            "status":drive.status,
+            "eligible_branches":[branch.id for branch in drive.branches]
+        },200
+
+    @jwt_required()
+    def put(self, drive_id):
+        user_id = get_jwt_identity()
+
+        user = User.query.get(user_id)
+
+        if user.role != "admin":
+            return {"message":"Access denied"},403
+
+        drive = Drive.query.get(drive_id)
+
+        if not drive:
+            return {"message":"Drive not found"},404
+
+        drive_credentials = request.get_json()
+
+        if not drive_credentials:
+            return {"message":"Data are required"},400
+
+        approval_status = drive_credentials.get("approval_status",None)
+
+        if approval_status not in ["approved","rejected"]:
+            return {"message":"Invalid approval status"},400
+
+        drive.approval_status = approval_status
+
+        db.session.commit()
+
+        return {
+            "message":"Drive updated successfully"
+        },200
