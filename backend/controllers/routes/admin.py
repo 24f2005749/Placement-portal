@@ -177,3 +177,35 @@ class AdminDrive(Resource):
         return {
             "message":"Drive updated successfully"
         },200
+
+class AdminApplications(Resource):
+
+    @jwt_required()
+    def get(self):
+        user_id = get_jwt_identity()
+
+        user = User.query.get(user_id)
+
+        if user.role != 'admin':
+            return {"message":"access denied"}, 403
+        
+        applications = Application.query.all()
+
+        result = []
+
+        for application in applications:
+            result.append({
+                "application_id":application.id,
+                "student_name":application.student.full_name,
+                "roll_number":application.student.roll_number,
+                "branch": application.student.branch.name,
+                "cgpa": application.student.cgpa,
+                "company_name":application.drive.company.company_name,
+                "drive_title":application.drive.title,
+                "status":application.status,
+                "applied_at":application.applied_at,
+                "interview_date":application.interview_date,
+                "remarks":application.remarks
+            })
+
+        return result,200

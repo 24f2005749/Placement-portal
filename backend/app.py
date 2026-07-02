@@ -3,7 +3,7 @@ from flask_restful import Api, Resource
 from controllers.config import Config
 from controllers.database import db
 from controllers.models import *
-from flask_jwt_extended import JWTManager, jwt_required
+from flask_jwt_extended import JWTManager
 from controllers.auth import Login, Register
 from controllers.routes.students import StudentProfile
 from controllers.routes.company import CompanyProfile
