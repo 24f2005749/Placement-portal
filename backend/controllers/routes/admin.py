@@ -209,3 +209,69 @@ class AdminApplications(Resource):
             })
 
         return result,200
+
+class AdminSearch(Resource):
+    @jwt_required()
+    def get(self):
+        user_id = get_jwt_identity()
+
+        user = User.query.get(user_id)
+
+        if user.role != "admin":
+            return {"message":"Access denied"},403
+
+        query = request.args.get("q",None)
+
+        if not query:
+            return {"message":"Search query is required"},400
+
+        students = Student.query.filter(
+            Student.full_name.ilike(f"%{query}%")
+        ).all()
+
+        companies = Company.query.filter(
+            Company.company_name.ilike(f"%{query}%")
+        ).all()
+
+        drives = Drive.query.filter(
+            Drive.title.ilike(f"%{query}%")
+        ).all()
+
+        result = {
+            "students":[],
+            "companies":[],
+            "drives":[]
+        }
+
+        for student in students:
+            result["students"].append({
+                "id":student.id,
+                "full_name":student.full_name,
+                "roll_number":student.roll_number,
+                "branch":student.branch.name,
+                "cgpa":student.cgpa,
+                "graduation_year":student.graduation_year,
+                "active":student.user.active
+            })
+
+        for company in companies:
+            result["companies"].append({
+                "id":company.id,
+                "company_name":company.company_name,
+                "website":company.website,
+                "hr_name":company.hr_name,
+                "approval_status":company.approval_status,
+                "active":company.user.active
+            })
+
+        for drive in drives:
+            result["drives"].append({
+                "id":drive.id,
+                "company_name":drive.company.company_name,
+                "title":drive.title,
+                "location":drive.location,
+                "approval_status":drive.approval_status,
+                "status":drive.status
+            })
+
+        return result,200
