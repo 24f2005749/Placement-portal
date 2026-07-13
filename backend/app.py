@@ -4,17 +4,25 @@ from controllers.config import Config
 from controllers.database import db
 from controllers.models import *
 from flask_jwt_extended import JWTManager
+from flask_cors import CORS
 from controllers.auth import Login, Register
 from controllers.routes.students import StudentProfile
 from controllers.routes.company import CompanyProfile
 from controllers.routes.drives import DrivesList, CompanyDrive
 from controllers.routes.applications import CompanyApplication, CompanyApplicationList, StudentApplication, StudentApplicationList
-from controllers.routes.admin import AdminCompanies, AdminCompany, AdminDashboard, AdminDrive, AdminDrives, AdminApplications, AdminSearch
+from controllers.routes.admin import AdminCompanies, AdminCompany, AdminDashboard, AdminDrive, AdminDrives, AdminApplications, AdminSearch, AdminStudents, AdminStudent
+from controllers.routes.branches import BranchList, BranchResource
+from controllers.routes.student_dashboard import StudentDashboard
+from controllers.routes.company_dashboard import CompanyDashboard
+from controllers.routes.student_drives import StudentDrives,StudentDrive,StudentCompanies
+from controllers.routes.jobs import JobStatus, StudentApplicationExport, StudentApplicationExportFile
 
 jwt = JWTManager()
 
+
 def create_app():
     app = Flask(__name__)
+    CORS(app,resources={r"/*": {"origins": ["http://localhost:5173","http://127.0.0.1:5173"]}})
     app.config.from_object(Config)
    
 
@@ -43,8 +51,7 @@ def create_app():
             db.session.add(admin)
             db.session.commit()
 
-        #! TEMPORARY ADDITION 
-        def seed_branches():
+        def seed_branches():  
             branches = [
                 "B.Tech CSE",
                 "B.Tech IT",
@@ -60,7 +67,10 @@ def create_app():
             db.session.commit()
 
         seed_branches()    
-        #! UPTO HERE
+
+        Drive.query.filter(Drive.status.is_(None)).update({"status":"open"})
+        Drive.query.filter(Drive.approval_status.is_(None)).update({"approval_status":"pending"})
+        db.session.commit()
     return app,api
 
 app, api = create_app()
@@ -73,8 +83,8 @@ api.add_resource(Register, "/register")
 api.add_resource(StudentProfile,"/student/profile")
 api.add_resource(CompanyProfile,"/company/profile")
 
-api.add_resource(CompanyDrive,"/company/drive/<int:drive_id>")
-api.add_resource(DrivesList,"/company/driveslist")
+api.add_resource(CompanyDrive,"/company/drives/<int:drive_id>")
+api.add_resource(DrivesList,"/company/drives")
 
 api.add_resource(StudentApplicationList,"/student/applications")
 
@@ -94,6 +104,22 @@ api.add_resource(AdminDrive,"/admin/drives/<int:drive_id>")
 
 api.add_resource(AdminApplications,"/admin/applications")
 api.add_resource(AdminSearch,"/admin/search")
+api.add_resource(AdminStudents,"/admin/students")
+api.add_resource(AdminStudent,"/admin/students/<int:student_id>")
+
+api.add_resource(BranchList,"/branches")
+api.add_resource(BranchResource,"/branches/<int:branch_id>")
+
+api.add_resource(StudentDashboard,"/student/dashboard")
+
+api.add_resource(CompanyDashboard,"/company/dashboard")
+
+api.add_resource(StudentDrives,"/student/drives")
+api.add_resource(StudentDrive,"/student/drives/<int:drive_id>")
+api.add_resource(StudentCompanies,"/student/companies")
+api.add_resource(StudentApplicationExport,"/student/applications/export")
+api.add_resource(StudentApplicationExportFile,"/student/applications/export/<string:filename>")
+api.add_resource(JobStatus,"/jobs/<string:job_id>")
 
 if __name__=="__main__":
     app.run(port=3000,debug=True)
