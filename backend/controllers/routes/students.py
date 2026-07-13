@@ -1,8 +1,30 @@
 from controllers.database import db
 from controllers.models import *
 from flask_restful import Resource
-from flask import request, jsonify, make_response
+from flask import request, make_response
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from urllib.parse import urlparse
+
+def is_valid_resume_url(value):
+    parsed = urlparse(value)
+    return parsed.scheme in ["http", "https"] and bool(parsed.netloc)
+
+def serialize_student(student):
+    return {
+        "id":student.id,
+        "user_id":student.user_id,
+        "email":student.user.email,
+        "full_name":student.full_name,
+        "roll_number":student.roll_number,
+        "branch":student.branch_id,
+        "branch_id":student.branch_id,
+        "branch_name":student.branch.name,
+        "cgpa":student.cgpa,
+        "graduation_year":student.graduation_year,
+        "phone":student.phone,
+        "resume":student.resume,
+        "active":student.user.active
+    }
 
 class StudentProfile(Resource):
     @jwt_required()
@@ -14,11 +36,7 @@ class StudentProfile(Resource):
         if not student:
             return {"message": "Profile not found"}, 404
 
-        return {
-            "full_name": student.full_name,
-            "roll_number": student.roll_number,
-            "cgpa": student.cgpa
-        }, 200
+        return serialize_student(student), 200
     
     @jwt_required()
     def post(self):
@@ -29,15 +47,16 @@ class StudentProfile(Resource):
         if user.role != "student":
             return {"message": "Access denied"}, 403
 
-        # create student profile
         profile_credentials = request.get_json()
 
-        # data validation
         if not profile_credentials:
             result = {
-                "message":"Data are requied"
+                "message":"Data are required"
             }
             return make_response(result,400)
+
+        if Student.query.filter_by(user_id=user_id).first():
+            return {"message":"Profile already exists"},409
         
         full_name = profile_credentials.get('full_name',None)
         roll_number = profile_credentials.get('roll_number',None)
@@ -46,7 +65,7 @@ class StudentProfile(Resource):
         cgpa = profile_credentials.get('cgpa',None)
         graduation_year = profile_credentials.get('graduation_year',None)
         phone = profile_credentials.get('phone',None)
-        resume = profile_credentials.get('resume',None)
+        resume = profile_credentials.get('resume') or None
 
         if not (full_name and roll_number and cgpa and graduation_year and branch):
             result = {
@@ -74,6 +93,9 @@ class StudentProfile(Resource):
                     "message" : "Please fill a valid phone number"
                 }
                 return make_response(result,400)
+
+        if resume and not is_valid_resume_url(resume):
+            return {"message":"Resume must be an absolute http(s) URL"},400
         
         info = Student(
             user_id = user_id,
@@ -119,7 +141,7 @@ class StudentProfile(Resource):
         cgpa = profile_credentials.get('cgpa',student.cgpa)
         graduation_year = profile_credentials.get('graduation_year',student.graduation_year)
         phone = profile_credentials.get('phone',student.phone)
-        resume = profile_credentials.get('resume',student.resume)
+        resume = profile_credentials.get('resume',student.resume) or None
 
         if len(full_name) < 3:
             return {"message":"Name too short"},400
@@ -135,6 +157,9 @@ class StudentProfile(Resource):
 
         if phone and (not phone.isdigit() or len(phone) != 10):
             return {"message":"Please fill a valid phone number"},400
+
+        if resume and not is_valid_resume_url(resume):
+            return {"message":"Resume must be an absolute http(s) URL"},400
 
         student.full_name = full_name
         student.roll_number = roll_number

@@ -25,7 +25,8 @@ class CompanyProfile(Resource):
             "hr_name": company.hr_name,
             "hr_email": company.hr_email,
             "description": company.description,
-            "approval_status": company.approval_status
+            "approval_status": company.approval_status,
+            
         },200
     
     @jwt_required()

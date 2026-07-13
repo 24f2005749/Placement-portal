@@ -2,10 +2,13 @@ from flask_restful import Resource
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from flask import request
 from datetime import date
+from controllers.cache import clear_api_cache
 from controllers.database import db
 from controllers.models import *
 from datetime import datetime
 
+def format_datetime(value):
+    return value.isoformat() if value else None
 
 class StudentApplicationList(Resource):
 
@@ -34,7 +37,9 @@ class StudentApplicationList(Resource):
                 "company_name": application.drive.company.company_name,
                 "title": application.drive.title,
                 "status": application.status,
-                "applied_at": application.applied_at
+                "remarks": application.remarks,
+                "interview_date": format_datetime(application.interview_date),
+                "applied_at": format_datetime(application.applied_at)
             })
 
         return result,200
@@ -84,7 +89,7 @@ class StudentApplicationList(Resource):
         if drive.eligibility_year and student.graduation_year != drive.eligibility_year:
             return {"message":"Graduation year not eligible"},400
 
-        if student.branch not in drive.branches:
+        if drive.branches and student.branch not in drive.branches:
             return {"message":"Branch not eligible"},400
 
         existing_application = Application.query.filter_by(
@@ -102,6 +107,7 @@ class StudentApplicationList(Resource):
 
         db.session.add(application)
         db.session.commit()
+        clear_api_cache()
 
         return {
             "message":"Application submitted successfully",
@@ -141,8 +147,8 @@ class StudentApplication(Resource):
             "location":application.drive.location,
             "status":application.status,
             "remarks":application.remarks,
-            "interview_date":application.interview_date,
-            "applied_at":application.applied_at
+            "interview_date":format_datetime(application.interview_date),
+            "applied_at":format_datetime(application.applied_at)
         },200
 
     @jwt_required()
@@ -172,6 +178,7 @@ class StudentApplication(Resource):
 
         db.session.delete(application)
         db.session.commit()
+        clear_api_cache()
 
         return {"message":"Application withdrawn successfully"},200
     
@@ -209,7 +216,10 @@ class CompanyApplicationList(Resource):
                 "branch":application.student.branch.name,
                 "cgpa":application.student.cgpa,
                 "graduation_year":application.student.graduation_year,
-                "status":application.status
+                "resume":application.student.resume,
+                "status":application.status,
+                "remarks":application.remarks,
+                "interview_date":format_datetime(application.interview_date)
             })
 
         return result,200
@@ -260,7 +270,9 @@ class CompanyApplication(Resource):
         application.status = status
         application.remarks = remarks
 
-        if interview_date:
+        if status == "rejected":
+            application.interview_date = None
+        elif interview_date:
             try:
                 application.interview_date = datetime.strptime(
                     interview_date,
@@ -272,5 +284,6 @@ class CompanyApplication(Resource):
                 },400
 
         db.session.commit()
+        clear_api_cache()
 
         return {"message":"Application updated successfully"},200
