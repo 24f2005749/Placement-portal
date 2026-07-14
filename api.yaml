@@ -1,0 +1,408 @@
+openapi: 3.0.3
+info:
+  title: Placement Portal API
+  version: 1.0.0
+  description: API for student placement drives, company applications, and administration.
+servers:
+  - url: http://127.0.0.1:3000
+security:
+  - bearerAuth: []
+paths:
+  /login:
+    post:
+      tags: [Authentication]
+      security: []
+      summary: Sign in
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/LoginRequest'}
+      responses:
+        '200': {description: Authenticated}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+  /register:
+    post:
+      tags: [Authentication]
+      security: []
+      summary: Register a student or company account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/RegisterRequest'}
+      responses:
+        '201': {description: Account created}
+        '409': {description: Email is already registered}
+  /student/profile:
+    get:
+      tags: [Student]
+      summary: Get the signed-in student's profile
+      responses: {'200': {description: Student profile}}
+    post:
+      tags: [Student]
+      summary: Complete a student profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/StudentProfile'}
+      responses: {'201': {description: Profile created}}
+    put:
+      tags: [Student]
+      summary: Update a student profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/StudentProfile'}
+      responses: {'200': {description: Profile updated}}
+  /student/dashboard:
+    get:
+      tags: [Student]
+      summary: Get student dashboard statistics
+      responses: {'200': {description: Dashboard statistics}}
+  /student/drives:
+    get:
+      tags: [Student]
+      summary: List approved, open drives the student can discover
+      parameters:
+        - name: q
+          in: query
+          description: Searches drive title, company name, or location.
+          schema: {type: string}
+      responses:
+        '200':
+          description: Drives, including the signed-in student's eligibility
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/StudentDrive'}
+  /student/drives/{drive_id}:
+    get:
+      tags: [Student]
+      summary: View an eligible approved drive
+      parameters: [{$ref: '#/components/parameters/DriveId'}]
+      responses: {'200': {description: Drive details}, '403': {description: Not eligible}}
+  /student/companies:
+    get:
+      tags: [Student]
+      summary: Search approved companies
+      parameters:
+        - name: q
+          in: query
+          description: Searches company name, website, and description.
+          schema: {type: string}
+      responses:
+        '200':
+          description: Matching approved companies
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/CompanyPublic'}
+  /student/applications:
+    get:
+      tags: [Student]
+      summary: List the signed-in student's applications
+      responses: {'200': {description: Applications}}
+    post:
+      tags: [Student]
+      summary: Apply to a drive
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [drive_id]
+              properties: {drive_id: {type: integer}}
+      responses: {'201': {description: Application submitted}}
+  /student/applications/{application_id}:
+    get:
+      tags: [Student]
+      summary: View an application
+      parameters: [{$ref: '#/components/parameters/ApplicationId'}]
+      responses: {'200': {description: Application details}}
+    delete:
+      tags: [Student]
+      summary: Withdraw an application still in applied status
+      parameters: [{$ref: '#/components/parameters/ApplicationId'}]
+      responses: {'200': {description: Application withdrawn}}
+  /student/applications/export:
+    post:
+      tags: [Student]
+      summary: Start an asynchronous CSV export of the student's applications
+      responses: {'202': {description: Export job started}, '503': {description: Export service unavailable}}
+  /student/applications/export/{filename}:
+    get:
+      tags: [Student]
+      summary: Download a completed application CSV export
+      parameters:
+        - name: filename
+          in: path
+          required: true
+          schema: {type: string}
+      responses: {'200': {description: CSV file}}
+  /company/profile:
+    get:
+      tags: [Company]
+      summary: Get the signed-in company's profile
+      responses: {'200': {description: Company profile}}
+    post:
+      tags: [Company]
+      summary: Complete a company profile
+      responses: {'201': {description: Profile created}}
+    put:
+      tags: [Company]
+      summary: Update a company profile
+      responses: {'200': {description: Profile updated}}
+  /company/dashboard:
+    get:
+      tags: [Company]
+      summary: Get company dashboard statistics
+      responses: {'200': {description: Dashboard statistics}}
+  /company/drives:
+    get:
+      tags: [Company]
+      summary: List the signed-in company's drives
+      responses: {'200': {description: Drives}}
+    post:
+      tags: [Company]
+      summary: Create a drive
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/DriveInput'}
+      responses: {'201': {description: Drive created}}
+  /company/drives/{drive_id}:
+    get:
+      tags: [Company]
+      summary: Get one of the company's drives
+      parameters: [{$ref: '#/components/parameters/DriveId'}]
+      responses: {'200': {description: Drive details}}
+    put:
+      tags: [Company]
+      summary: Update an unapproved drive
+      parameters: [{$ref: '#/components/parameters/DriveId'}]
+      responses: {'200': {description: Drive updated}}
+    delete:
+      tags: [Company]
+      summary: Delete a drive
+      parameters: [{$ref: '#/components/parameters/DriveId'}]
+      responses: {'200': {description: Drive deleted}}
+  /company/drives/{drive_id}/applications:
+    get:
+      tags: [Company]
+      summary: List applicants for an owned drive, including each resume URL
+      parameters: [{$ref: '#/components/parameters/DriveId'}]
+      responses:
+        '200':
+          description: Applicants
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/Applicant'}
+  /company/applications/{application_id}:
+    put:
+      tags: [Company]
+      summary: Update an applicant's status for an owned drive
+      parameters: [{$ref: '#/components/parameters/ApplicationId'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status: {type: string, enum: [applied, shortlisted, selected, rejected]}
+                remarks: {type: string}
+                interview_date: {type: string, example: '2026-08-10 10:30'}
+      responses: {'200': {description: Application updated}}
+  /admin/students:
+    get:
+      tags: [Admin]
+      summary: List and filter students for management
+      parameters:
+        - name: drive_id
+          in: query
+          schema: {type: integer}
+        - name: eligible
+          in: query
+          schema: {type: boolean}
+      responses: {'200': {description: Students}}
+  /admin/dashboard:
+    get:
+      tags: [Admin]
+      summary: Get administration dashboard statistics
+      responses: {'200': {description: Dashboard statistics}}
+  /admin/students/{student_id}:
+    put:
+      tags: [Admin]
+      summary: Activate or deactivate a student account
+      parameters: [{$ref: '#/components/parameters/StudentId'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: {active: {type: boolean}}
+      responses: {'200': {description: Student updated}}
+  /admin/companies:
+    get:
+      tags: [Admin]
+      summary: List companies
+      responses: {'200': {description: Companies}}
+  /admin/companies/{company_id}:
+    put:
+      tags: [Admin]
+      summary: Approve, reject, or activate a company
+      parameters: [{$ref: '#/components/parameters/CompanyId'}]
+      responses: {'200': {description: Company updated}}
+  /admin/drives:
+    get:
+      tags: [Admin]
+      summary: List drives for approval
+      responses: {'200': {description: Drives}}
+  /admin/drives/{drive_id}:
+    get:
+      tags: [Admin]
+      summary: View a drive
+      parameters: [{$ref: '#/components/parameters/DriveId'}]
+      responses: {'200': {description: Drive details}}
+    put:
+      tags: [Admin]
+      summary: Approve, reject, open, or close a drive
+      parameters: [{$ref: '#/components/parameters/DriveId'}]
+      responses: {'200': {description: Drive updated}}
+  /admin/applications:
+    get:
+      tags: [Admin]
+      summary: List all applications
+      responses: {'200': {description: Applications}}
+  /admin/search:
+    get:
+      tags: [Admin]
+      summary: Search students, companies, and drives
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema: {type: string}
+      responses: {'200': {description: Search results}}
+  /branches:
+    get:
+      tags: [Branches]
+      security: []
+      summary: List branches
+      responses: {'200': {description: Branches}}
+    post:
+      tags: [Branches]
+      summary: Create a branch (admin only)
+      responses: {'201': {description: Branch created}}
+  /branches/{branch_id}:
+    put:
+      tags: [Branches]
+      summary: Rename a branch (admin only)
+      parameters: [{$ref: '#/components/parameters/BranchId'}]
+      responses: {'200': {description: Branch updated}}
+    delete:
+      tags: [Branches]
+      summary: Delete an unused branch (admin only)
+      parameters: [{$ref: '#/components/parameters/BranchId'}]
+      responses: {'200': {description: Branch deleted}}
+  /jobs/{job_id}:
+    get:
+      tags: [Jobs]
+      summary: Check an asynchronous export job's status
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema: {type: string}
+      responses: {'200': {description: Job status}}
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    DriveId: {name: drive_id, in: path, required: true, schema: {type: integer}}
+    ApplicationId: {name: application_id, in: path, required: true, schema: {type: integer}}
+    StudentId: {name: student_id, in: path, required: true, schema: {type: integer}}
+    CompanyId: {name: company_id, in: path, required: true, schema: {type: integer}}
+    BranchId: {name: branch_id, in: path, required: true, schema: {type: integer}}
+  responses:
+    Unauthorized: {description: Missing, invalid, or expired access token}
+  schemas:
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: {type: string, format: email}
+        password: {type: string, format: password}
+    RegisterRequest:
+      allOf:
+        - $ref: '#/components/schemas/LoginRequest'
+        - type: object
+          required: [role]
+          properties: {role: {type: string, enum: [student, company]}}
+    StudentProfile:
+      type: object
+      required: [full_name, roll_number, branch, cgpa, graduation_year]
+      properties:
+        full_name: {type: string}
+        roll_number: {type: string}
+        branch: {type: integer, description: Branch ID}
+        cgpa: {type: number, minimum: 0, maximum: 10}
+        graduation_year: {type: integer}
+        phone: {type: string}
+        resume: {type: string, format: uri}
+    CompanyPublic:
+      type: object
+      properties:
+        id: {type: integer}
+        company_name: {type: string}
+        website: {type: string, format: uri}
+        description: {type: string}
+    StudentDrive:
+      type: object
+      properties:
+        id: {type: integer}
+        company_name: {type: string}
+        title: {type: string}
+        location: {type: string}
+        eligible: {type: boolean}
+        eligibility_message: {type: string}
+        can_apply: {type: boolean}
+    DriveInput:
+      type: object
+      required: [title, job_description, application_deadline, eligible_branches]
+      properties:
+        title: {type: string}
+        job_description: {type: string}
+        salary_package: {type: number, description: Salary in LPA}
+        location: {type: string}
+        eligibility_year: {type: integer}
+        eligibility_cgpa: {type: number}
+        application_deadline: {type: string, format: date}
+        drive_date: {type: string, format: date}
+        eligible_branches: {type: array, items: {type: integer}}
+    Applicant:
+      type: object
+      properties:
+        application_id: {type: integer}
+        student_name: {type: string}
+        roll_number: {type: string}
+        branch: {type: string}
+        cgpa: {type: number}
+        graduation_year: {type: integer}
+        resume: {type: string, format: uri, nullable: true}
+        status: {type: string}
+        remarks: {type: string, nullable: true}
+        interview_date: {type: string, nullable: true}
